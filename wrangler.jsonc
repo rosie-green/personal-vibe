@@ -20,12 +20,12 @@
       "database_name": "medicine-tracker",
       // Run `npx wrangler d1 create medicine-tracker` and paste the id it prints here.
       // (Not needed for local dev; wrangler uses a local SQLite file.)
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "dd5dac97-f752-4136-8cd0-be2fe53f5b77",
       "migrations_dir": "migrations"
     }
   ],
 
-  // Optional defence in depth for the API: once Cloudflare Access is set up,
+  // Optional defense in depth for the API: once Cloudflare Access is set up,
   // fill these in (see README) and the Worker will also verify the Access JWT.
   // Leave them unset for local dev.
   "vars": {
