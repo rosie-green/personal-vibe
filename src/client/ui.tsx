@@ -4,22 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ApiFailure } from "./api.ts";
 
-export function StarIcon({ size = 20, filled = true, className = "" }: { size?: number; filled?: boolean; className?: string }) {
+export function Emoji({ symbol, size = 20, className = "" }: { symbol: string; size?: number; className?: string }) {
   return (
-    <svg
-      className={`star ${filled ? "star-filled" : "star-empty"} ${className}`}
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      aria-hidden="true"
-    >
-      <path
-        d="M12 2.6l2.8 6 6.6.8-4.9 4.5 1.3 6.5L12 17.1 6.2 20.4l1.3-6.5L2.6 9.4l6.6-.8z"
-        strokeLinejoin="round"
-        strokeWidth="1.6"
-      />
-    </svg>
+    <span className={`emoji ${className}`} style={{ fontSize: size }} aria-hidden="true">
+      {symbol}
+    </span>
   );
+}
+
+export function StarIcon({ size = 20, className = "" }: { size?: number; className?: string }) {
+  return <Emoji symbol="⭐" size={size} className={className} />;
 }
 
 /** A little burst of stars that plays once when mounted. */

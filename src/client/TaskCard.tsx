@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { DayTask, TimeOfDay } from "../shared/types.ts";
-import { StarBurst, StarIcon } from "./ui.tsx";
+import { Emoji, StarBurst, StarIcon } from "./ui.tsx";
 
 export const TIME_LABEL: Record<TimeOfDay, string> = {
   morning: "Morning",
@@ -8,29 +8,11 @@ export const TIME_LABEL: Record<TimeOfDay, string> = {
   any: "Any time",
 };
 
-function TimeIcon({ time }: { time: TimeOfDay }) {
-  if (time === "morning") {
-    return (
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="time-icon">
-        <circle cx="12" cy="12" r="4.2" />
-        <path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1" />
-      </svg>
-    );
-  }
-  if (time === "evening") {
-    return (
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="time-icon">
-        <path d="M20.5 14.2A8.5 8.5 0 0 1 9.8 3.5a8.5 8.5 0 1 0 10.7 10.7z" />
-      </svg>
-    );
-  }
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" className="time-icon">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 2" />
-    </svg>
-  );
-}
+const TIME_ICON: Record<TimeOfDay, string> = {
+  morning: "☀️",
+  evening: "🌙",
+  any: "🕐",
+};
 
 function reminderText(task: DayTask): string {
   if (task.reminder_text) return task.reminder_text;
@@ -78,7 +60,7 @@ export function TaskCard({
           ) : (
             <>
               <span className="pill pill-time">
-                <TimeIcon time={task.time_of_day} /> {TIME_LABEL[task.time_of_day]}
+                <Emoji symbol={TIME_ICON[task.time_of_day]} size={16} /> {TIME_LABEL[task.time_of_day]}
               </span>
               <button className="btn btn-primary" onClick={tick} disabled={busy}>
                 Mark done

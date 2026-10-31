@@ -183,14 +183,6 @@ select {
   cursor: pointer;
 }
 
-.tab-icon {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 .tab-on {
   color: var(--accent);
   font-weight: 700;
@@ -198,16 +190,12 @@ select {
 
 /* ---------- stars ---------- */
 
-.star-filled {
-  fill: var(--gold);
-  stroke: var(--gold-edge);
-}
-.star-empty {
-  fill: none;
-  stroke: var(--muted);
-}
-.star {
+.emoji {
+  display: inline-block;
   flex: none;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+  font-weight: 400;
+  line-height: 1;
 }
 
 @keyframes pop {
@@ -366,14 +354,6 @@ select {
   background: var(--done-soft);
   color: var(--done);
 }
-.time-icon {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
 /* ---------- buttons ---------- */
 
 .btn {
