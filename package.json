@@ -1,0 +1,37 @@
+{
+  "name": "medicine-tracker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Personal daily medicine / routine tracker on Cloudflare Workers + D1",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build-client.mjs",
+    "deploy": "npm run build && wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "node --no-warnings --test \"test/**/*.test.ts\"",
+    "db:migrate:local": "wrangler d1 migrations apply medicine-tracker --local",
+    "db:migrate:remote": "wrangler d1 migrations apply medicine-tracker --remote",
+    "db:seed:local": "wrangler d1 execute medicine-tracker --local --file=seed/seed.sql",
+    "db:seed:remote": "wrangler d1 execute medicine-tracker --remote --file=seed/seed.sql"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "esbuild": "^0.28.2",
+    "typescript": "^5.9.0",
+    "wrangler": "^4.0.0"
+  },
+  "allowScripts": {
+    "workerd@1.20261023.1": true,
+    "esbuild@0.28.2": true
+  }
+}

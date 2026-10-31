@@ -1,0 +1,35 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "medicine-tracker",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2025-10-01",
+
+  // The built React app. `npm run build` writes it here.
+  // Only /api/* runs the Worker; everything else is served as static files
+  // (and unknown paths fall back to index.html).
+  "assets": {
+    "directory": "./dist/client",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "medicine-tracker",
+      // Run `npx wrangler d1 create medicine-tracker` and paste the id it prints here.
+      // (Not needed for local dev; wrangler uses a local SQLite file.)
+      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Optional defence in depth for the API: once Cloudflare Access is set up,
+  // fill these in (see README) and the Worker will also verify the Access JWT.
+  // Leave them unset for local dev.
+  "vars": {
+    // "ACCESS_TEAM_DOMAIN": "your-team.cloudflareaccess.com",
+    // "ACCESS_AUD": "the-application-audience-tag"
+  }
+}
