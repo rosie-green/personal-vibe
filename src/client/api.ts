@@ -4,7 +4,7 @@ import type { CalendarView, DayView, MedicationView, Task, TimeOfDay } from "../
 
 export class ApiFailure extends Error {
   status: number;
-  /** True when we probably couldn't reach the app at all (offline, or the Access login expired). */
+  /** True when we probably couldn't reach the app at all (for example, offline). */
   unreachable: boolean;
   constructor(message: string, status: number, unreachable = false) {
     super(message);
@@ -26,7 +26,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    // Offline, or Cloudflare Access redirected to its login page (which the browser blocks).
+    // Offline or another network error.
     throw new ApiFailure(UNREACHABLE, 0, true);
   }
   const isJson = (res.headers.get("content-type") ?? "").includes("application/json");

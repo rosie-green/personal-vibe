@@ -1,8 +1,6 @@
 // Cloudflare Worker entry point: a small JSON API under /api/*.
 // Everything else (the React app) is served by Workers Static Assets.
 
-import { accessConfigFromEnv, verifyAccessJwt } from "./access.ts";
-import type { AccessDeps } from "./access.ts";
 import { getCalendar, getDayView, setCompletion } from "./days.ts";
 import type { D1Like } from "./db.ts";
 import {
@@ -35,15 +33,16 @@ import {
 import type { Body } from "./validate.ts";
 import type { TaskPatch } from "./tasks.ts";
 import type { MedicationPatch } from "./medicines.ts";
+import { loginPage, makeSession, passwordMatches, sessionCookie, validSession } from "./session.ts";
 
 export interface Env {
   DB: D1Like;
   ASSETS?: { fetch(request: Request): Promise<Response> };
-  ACCESS_TEAM_DOMAIN?: string;
-  ACCESS_AUD?: string;
+  APP_PASSWORD?: string;
 }
 
-export interface Deps extends AccessDeps {
+export interface Deps {
+  nowSec: number;
   nowIso: string;
 }
 
@@ -67,6 +66,22 @@ function json(data: unknown, status = 200): Response {
 }
 
 const router = new Router<Ctx>();
+
+router.post("/api/login", async (c) => {
+  const password = c.env.APP_PASSWORD;
+  if (!password) throw new HttpError(503, "Login is not configured");
+  const body = await c.body();
+  if (typeof body.password !== "string" || !(await passwordMatches(body.password, password))) {
+    throw new HttpError(401, "Incorrect password");
+  }
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store",
+      "set-cookie": sessionCookie(await makeSession(password)),
+    },
+  });
+});
 
 // --- days, stars, calendar -------------------------------------------------
 
@@ -225,32 +240,42 @@ router.get("/api/health", async () => json({ ok: true }));
 export async function handle(request: Request, env: Env, deps?: Partial<Deps>): Promise<Response> {
   const url = new URL(request.url);
 
+  const now = new Date();
+  const fullDeps: Deps = {
+    nowSec: deps?.nowSec ?? Math.floor(now.getTime() / 1000),
+    nowIso: deps?.nowIso ?? now.toISOString(),
+  };
+
+  // Enforce the app password before serving either the API or any static asset.
+  try {
+    if (url.pathname === "/login" || url.pathname === "/login/") {
+      if (env.APP_PASSWORD && await validSession(request.headers.get("cookie"), env.APP_PASSWORD, fullDeps.nowSec)) {
+        return Response.redirect(new URL("/", request.url), 303);
+      }
+      return loginPage(url.searchParams.get("return") ?? "/");
+    }
+
+    const isLogin = url.pathname === "/api/login" && request.method === "POST";
+    const authenticated = !!env.APP_PASSWORD && await validSession(request.headers.get("cookie"), env.APP_PASSWORD, fullDeps.nowSec);
+    if (!isLogin && !authenticated) {
+      if (url.pathname.startsWith("/api/")) return json({ error: "Sign in required" }, 401);
+      if (!env.APP_PASSWORD) return new Response("APP_PASSWORD is not configured", { status: 503 });
+      const returnTo = `${url.pathname}${url.search}${url.hash}`;
+      return Response.redirect(new URL(`/login?return=${encodeURIComponent(returnTo)}`, request.url), 303);
+    }
+  } catch (err) {
+    if (err instanceof HttpError) return json({ error: err.message }, err.status);
+    console.error(err);
+    return json({ error: "Something went wrong on the server" }, 500);
+  }
+
   if (!url.pathname.startsWith("/api/") && url.pathname !== "/api") {
     // Not an API call. Normally Static Assets answers these before we run.
     if (env.ASSETS) return env.ASSETS.fetch(request);
     return new Response("Not found", { status: 404 });
   }
 
-  const now = new Date();
-  const fullDeps: Deps = {
-    fetchImpl: deps?.fetchImpl ?? fetch,
-    nowSec: deps?.nowSec ?? Math.floor(now.getTime() / 1000),
-    nowIso: deps?.nowIso ?? now.toISOString(),
-  };
-
   try {
-    const access = accessConfigFromEnv(env);
-    if (access) {
-      const token = request.headers.get("cf-access-jwt-assertion");
-      if (!token) throw new HttpError(403, "Forbidden");
-      try {
-        await verifyAccessJwt(token, access, fullDeps);
-      } catch (err) {
-        console.warn("Access JWT rejected:", err instanceof Error ? err.message : err);
-        throw new HttpError(403, "Forbidden");
-      }
-    }
-
     const found = router.match(request.method, url.pathname.replace(/\/+$/, "") || "/");
     if (found === null) throw new HttpError(404, "Not found");
     if (found === "method-not-allowed") throw new HttpError(405, "Method not allowed");

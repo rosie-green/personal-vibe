@@ -40,25 +40,15 @@ npm run deploy
 
 Wrangler prints your address (something like `medicine-tracker.<you>.workers.dev`).
 
-### Lock it down with Cloudflare Access (do this before using it for real)
+### Configure the app password
 
-The app has no login of its own. **Cloudflare Access** puts a login in front of it, which is free for up to 50 users. This is health data, so don't skip it.
+Set the app password as a Worker secret (do not put the password in `wrangler.jsonc` or source control):
 
-1. Cloudflare dashboard → **Zero Trust** → **Access** → **Applications** → **Add an application** → **Self-hosted**.
-2. Point it at your Worker's address (a custom domain, or the `workers.dev` address). Wording in the dashboard changes now and then; for `workers.dev` there's also an option under the Worker's **Settings → Domains & Routes** to enable Access.
-3. Add a policy that allows only your email address. The default one-time email code works on any device.
-4. Optional extra layer: the Worker can also check the Access token on every API call, so the API refuses requests even if Access is ever misconfigured. In the application's settings copy the **Application Audience (AUD) tag**, then add these to `wrangler.jsonc` under `vars` and redeploy:
+```bash
+npx wrangler secret put APP_PASSWORD
+```
 
-   ```jsonc
-   "vars": {
-     "ACCESS_TEAM_DOMAIN": "your-team.cloudflareaccess.com",
-     "ACCESS_AUD": "the-aud-tag-you-copied"
-   }
-   ```
-
-   Leave them out for local development.
-
-If your Access login expires while the app is open, the app shows "Can't reach the server… reload the page to sign in again" with a Reload button.
+Enter the password when prompted, then deploy. Requests to any page or API without a valid session are redirected to `/login` (API requests receive 401). To use a password locally, add `APP_PASSWORD=your-local-password` to the ignored `.dev.vars` file. The HttpOnly, Secure, SameSite session cookie expires after 30 days and sends you back to `/login`.
 
 ## How the numbers work
 
@@ -97,7 +87,7 @@ The medicine code is kept in its own folders (`src/medicine/`, `src/worker/medic
 ## Tests
 
 ```bash
-npm test            # 84 tests: dates, stars, calendar, stock, the API, the Access check
+npm test            # dates, stars, calendar, stock, and API tests
 npm run typecheck
 ```
 
