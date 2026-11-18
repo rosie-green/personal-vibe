@@ -859,6 +859,90 @@ textarea {
   box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
 }
 
+/* ---------- notes ---------- */
+
+.note-list-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+.note-open {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.note-open::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+.markdown.note-excerpt {
+  max-height: 5.25rem;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.9rem;
+  mask-image: linear-gradient(to bottom, #000 4.25rem, transparent 5.25rem);
+  mask-size: 100% 5.25rem;
+  mask-repeat: no-repeat;
+}
+.note-excerpt :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+.note-view {
+  display: grid;
+  gap: 16px;
+  overflow-wrap: anywhere;
+}
+.note-editor {
+  font-family: ui-monospace, monospace;
+}
+.markdown {
+  min-width: 0;
+  overflow-x: auto;
+  overflow-wrap: anywhere;
+}
+.markdown > * + * {
+  margin-top: 0.8em;
+}
+.markdown pre {
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+.markdown code {
+  background: var(--surface-2);
+}
+.markdown blockquote {
+  margin-inline: 0;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--line);
+  color: var(--muted);
+}
+.markdown a {
+  color: var(--accent);
+}
+.markdown img {
+  max-width: 100%;
+  height: auto;
+}
+.markdown table {
+  border-collapse: collapse;
+}
+.markdown th,
+.markdown td {
+  border: 1px solid var(--line);
+  padding: 4px 8px;
+}
+
 /* ---------- reduced motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {

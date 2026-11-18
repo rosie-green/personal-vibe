@@ -13,6 +13,7 @@ import {
   updateMedication,
 } from "./medicines.ts";
 import { Router } from "./router.ts";
+import { createNote, deleteNote, listNotes, readNote, updateNote } from "./notes.ts";
 import { createTask, deleteTask, listTasks, updateTask } from "./tasks.ts";
 import {
   HttpError,
@@ -130,6 +131,23 @@ router.patch("/api/tasks/:id", async (c, p) => {
 
 router.delete("/api/tasks/:id", async (c, p) => {
   await deleteTask(c.env.DB, reqId(p.id!));
+  return json({ ok: true });
+});
+
+// --- notes --------------------------------------------------------------------
+
+router.get("/api/notes", async (c) => json(await listNotes(c.env.DB)));
+
+router.post("/api/notes", async (c) =>
+  json(await createNote(c.env.DB, readNote(await c.body()), c.deps.nowIso), 201),
+);
+
+router.put("/api/notes/:id", async (c, p) =>
+  json(await updateNote(c.env.DB, reqId(p.id!), readNote(await c.body()), c.deps.nowIso)),
+);
+
+router.delete("/api/notes/:id", async (c, p) => {
+  await deleteNote(c.env.DB, reqId(p.id!));
   return json({ ok: true });
 });
 

@@ -1,6 +1,7 @@
 // Thin typed client for the Worker's JSON API.
 
 import type { CalendarView, DayView, MedicationView, Task, TimeOfDay } from "../shared/types.ts";
+import type { Note, NoteContent } from "../shared/notes.ts";
 
 export class ApiFailure extends Error {
   status: number;
@@ -64,6 +65,11 @@ export const api = {
     }>,
   ) => request<Task>("PATCH", `/api/tasks/${id}`, b),
   deleteTask: (id: number) => request<{ ok: true }>("DELETE", `/api/tasks/${id}`),
+
+  notes: () => request<Note[]>("GET", "/api/notes"),
+  createNote: (note: NoteContent) => request<Note>("POST", "/api/notes", note),
+  updateNote: (id: number, note: NoteContent) => request<Note>("PUT", `/api/notes/${id}`, note),
+  deleteNote: (id: number) => request<{ ok: true }>("DELETE", `/api/notes/${id}`),
 
   medications: (date: string) => request<MedicationView[]>("GET", `/api/medications?${q({ date })}`),
   createMedication: (b: Record<string, unknown>) => request<MedicationView>("POST", "/api/medications", b),

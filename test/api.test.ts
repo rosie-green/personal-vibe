@@ -5,20 +5,31 @@ import assert from "node:assert/strict";
 import { beforeEach, describe, test } from "node:test";
 import { handle } from "../src/worker/index.ts";
 import type { Env } from "../src/worker/index.ts";
+import { makeSession, sessionCookie } from "../src/worker/session.ts";
 import type { CalendarView, DayView, MedicationView, Task } from "../src/shared/types.ts";
+import { NOTE_MARKDOWN_LIMIT } from "../src/shared/notes.ts";
+import type { Note } from "../src/shared/notes.ts";
 import { createTestDb, seedSql } from "./d1-shim.ts";
 import type { TestDb } from "./d1-shim.ts";
 
 const NOW_ISO = "2026-10-31T12:00:00.000Z";
 const deps = { nowIso: NOW_ISO, nowSec: Math.floor(Date.parse(NOW_ISO) / 1000) };
+const APP_PASSWORD = "test-password";
+const cookie = sessionCookie(await makeSession(APP_PASSWORD, deps.nowSec)).split(";")[0]!;
 
 let t: TestDb;
 let env: Env;
 
 beforeEach(() => {
   t = createTestDb();
-  env = { DB: t.db };
+  env = { DB: t.db, APP_PASSWORD };
 });
+
+function signedInRequest(path: string, init?: RequestInit): Request {
+  const headers = new Headers(init?.headers);
+  headers.set("cookie", cookie);
+  return new Request(`http://app.test${path}`, { ...init, headers });
+}
 
 async function call<T = unknown>(
   method: string,
@@ -31,12 +42,43 @@ async function call<T = unknown>(
     (init.headers as Record<string, string>)["content-type"] = "application/json";
     init.body = JSON.stringify(body);
   }
-  const res = await handle(new Request(`http://app.test${path}`, init), env, deps);
+  const res = await handle(signedInRequest(path, init), env, deps);
   return { status: res.status, data: (await res.json()) as T };
 }
 
 const mkTask = async (name: string, over: Record<string, unknown> = {}) =>
   (await call<Task>("POST", "/api/tasks", { name, active_from: "2026-10-01", ...over })).data;
+
+describe("notes", () => {
+  test("requires a signed-in session", async () => {
+    const response = await handle(new Request("http://app.test/api/notes"), env, deps);
+    assert.equal(response.status, 401);
+  });
+
+  test("create, list, edit and delete a note while preserving Markdown whitespace", async () => {
+    const markdown = "    indented code\n\nA hard break  \nOn the next line\n";
+    const created = await call<Note>("POST", "/api/notes", { title: "  Journal  ", markdown });
+    assert.equal(created.status, 201);
+    assert.deepEqual(created.data, { id: 1, title: "Journal", markdown, updated_at: NOW_ISO });
+    assert.deepEqual((await call("GET", "/api/notes")).data, [created.data]);
+
+    const path = `/api/notes/${created.data.id}`;
+    const edited = await call<Note>("PUT", path, { title: "Journal entry", markdown: "" });
+    assert.equal(edited.status, 200);
+    assert.deepEqual((await call("GET", "/api/notes")).data, [{ ...created.data, title: "Journal entry", markdown: "" }]);
+
+    assert.equal((await call("DELETE", path)).status, 200);
+    assert.deepEqual((await call("GET", "/api/notes")).data, []);
+    assert.equal((await call("PUT", path, { title: "Missing", markdown })).status, 404);
+    assert.equal((await call("DELETE", path)).status, 404);
+  });
+
+  test("validates title and Markdown", async () => {
+    assert.equal((await call("POST", "/api/notes", { title: " ", markdown: "" })).status, 400);
+    assert.equal((await call("POST", "/api/notes", { title: "Journal", markdown: 1 })).status, 400);
+    assert.equal((await call("POST", "/api/notes", { title: "Journal", markdown: "a".repeat(NOTE_MARKDOWN_LIMIT + 1) })).status, 400);
+  });
+});
 
 describe("tasks and the daily flow", () => {
   test("empty day", async () => {
@@ -225,7 +267,7 @@ describe("request handling", () => {
 
   test("writes must be JSON (blocks cross-site form posts)", async () => {
     const res = await handle(
-      new Request("http://app.test/api/tasks", {
+      signedInRequest("/api/tasks", {
         method: "POST",
         headers: { "content-type": "text/plain" },
         body: JSON.stringify({ name: "x", active_from: "2026-10-01" }),
@@ -235,7 +277,7 @@ describe("request handling", () => {
     );
     assert.equal(res.status, 415);
     const res2 = await handle(
-      new Request("http://app.test/api/tasks", { method: "POST", headers: { "content-type": "application/json" }, body: "{oops" }),
+      signedInRequest("/api/tasks", { method: "POST", headers: { "content-type": "application/json" }, body: "{oops" }),
       env,
       deps,
     );
@@ -250,14 +292,14 @@ describe("request handling", () => {
   });
 
   test("API responses are never cached", async () => {
-    const res = await handle(new Request("http://app.test/api/health"), env, deps);
+    const res = await handle(signedInRequest("/api/health"), env, deps);
     assert.equal(res.headers.get("cache-control"), "no-store");
   });
 
   test("non-API paths fall through to static assets", async () => {
     let asked = "";
     const withAssets: Env = {
-      DB: t.db,
+      ...env,
       ASSETS: {
         fetch: async (req) => {
           asked = new URL(req.url).pathname;
@@ -265,10 +307,10 @@ describe("request handling", () => {
         },
       },
     };
-    const res = await handle(new Request("http://app.test/calendar"), withAssets, deps);
+    const res = await handle(signedInRequest("/calendar"), withAssets, deps);
     assert.equal(asked, "/calendar");
     assert.equal(res.headers.get("content-type"), "text/html");
-    const noAssets = await handle(new Request("http://app.test/calendar"), env, deps);
+    const noAssets = await handle(signedInRequest("/calendar"), env, deps);
     assert.equal(noAssets.status, 404);
   });
 });

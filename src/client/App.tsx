@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from "react";
 import { Calendar } from "./Calendar.tsx";
 import { todayLocal } from "./dates.ts";
 import { Medicines } from "./Medicines.tsx";
+import { Notes } from "./Notes.tsx";
 import { Tasks } from "./Tasks.tsx";
 import { Today } from "./Today.tsx";
 import { Emoji, StarIcon } from "./ui.tsx";
 
-type Tab = "today" | "calendar" | "medicines" | "tasks";
-const TABS: Tab[] = ["today", "calendar", "medicines", "tasks"];
+type Tab = "today" | "calendar" | "medicines" | "tasks" | "notes";
+const TABS: Tab[] = ["today", "calendar", "medicines", "tasks", "notes"];
 
 function tabFromHash(): Tab {
   const h = location.hash.replace("#", "");
@@ -31,9 +32,9 @@ function useToday(): string {
   return today;
 }
 
-const ICONS: Record<Tab, string> = { today: "🗃️", calendar: "📅", medicines: "💊", tasks: "📝" };
+const ICONS: Record<Tab, string> = { today: "🗃️", calendar: "📅", medicines: "💊", tasks: "📝", notes: "📓" };
 
-const LABELS: Record<Tab, string> = { today: "Today", calendar: "Calendar", medicines: "Medicines", tasks: "Tasks" };
+const LABELS: Record<Tab, string> = { today: "Today", calendar: "Calendar", medicines: "Medicines", tasks: "Tasks", notes: "Notes" };
 
 export function App() {
   const [tab, setTabState] = useState<Tab>(tabFromHash);
@@ -70,6 +71,7 @@ export function App() {
         {tab === "calendar" ? <Calendar today={today} onStars={onStars} /> : null}
         {tab === "medicines" ? <Medicines today={today} /> : null}
         {tab === "tasks" ? <Tasks today={today} /> : null}
+        {tab === "notes" ? <Notes /> : null}
       </main>
 
       <nav className="tabbar" aria-label="Main">
