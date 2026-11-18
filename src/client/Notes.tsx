@@ -6,7 +6,7 @@ import remarkGfm from "remark-gfm";
 import { NOTE_MARKDOWN_LIMIT, NOTE_TITLE_LIMIT } from "../shared/notes.ts";
 import type { NoteContent } from "../shared/notes.ts";
 import { api } from "./api.ts";
-import { Banner, ErrorBanner, Field, Segmented, useLoad } from "./ui.tsx";
+import { Banner, ErrorBanner, Field, Segmented, plural, useLoad } from "./ui.tsx";
 
 const EMPTY_NOTE: NoteContent = { title: "", markdown: "" };
 const MODES = [{ value: "write", label: "Write" }, { value: "preview", label: "Preview" }] as const;
@@ -41,6 +41,7 @@ export function Notes() {
   const [pending, setPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const note = notes?.find((item) => item.id === selected);
+  const remaining = Math.max(0, NOTE_MARKDOWN_LIMIT - (draft?.markdown.length ?? 0));
 
   function startEditing(content: NoteContent) {
     setActionError(null);
@@ -95,7 +96,7 @@ export function Notes() {
             </Field>
             <Segmented value={mode} options={MODES} onChange={setMode} label="Markdown editor mode" />
             <div hidden={mode !== "write"}>
-              <Field label="Markdown" hint={`${NOTE_MARKDOWN_LIMIT.toLocaleString()} character limit`}>
+              <Field label="Markdown" hint={`${remaining.toLocaleString()} ${plural("character", remaining)} remaining`}>
                 <textarea className="note-editor" rows={10} value={draft.markdown} maxLength={NOTE_MARKDOWN_LIMIT}
                   disabled={pending} onChange={(event) => setDraft({ ...draft, markdown: event.target.value })} />
               </Field>
